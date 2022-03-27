@@ -1,4 +1,6 @@
+from unicodedata import name
 from notification import Notification
+from term import Term
 
 import requests
 import xmltojson
@@ -16,7 +18,7 @@ HEADERS = {
 }
 
 class Student:
-    """Student class to create and mange Infinite Campus students"""
+    """Student class for Infinite Campus students"""
     def __init__(self, district, state, username, password) -> None:
         self.district  = district
         self.state     = state
@@ -27,8 +29,7 @@ class Student:
     def start_session(self) -> None:
         """
         Attempts to starts a new Infinite Campus session
-        with username and password. Returns True if
-        sucessful, False if not.
+        with username and password.
         """
         # Send a request verifying the district
         district_response = self.session.get(
@@ -60,7 +61,7 @@ class Student:
     def get_notifications(self) -> list[Notification]:
         """
         Get all recent notifications from student.
-        Returns a list of notifications objects.
+        Returns a list of notification objects.
         """
         # Send a request to retrieve notifications
         notifcation_response = self.session.get("{}prism?x=notifications.Notification-retrieve".format(
@@ -72,7 +73,6 @@ class Student:
         ))
         # Get the list of notifications in the JSON
         notification_json_list = notifcation_response_json["campusRoot"]["NotificationList"]["Notification"]
-        print(json.dumps(notification_json_list, indent=4))
         notifications: list[Notification] = list()
         # Add each notification from JSON to a notification object in notifications list with data from JSON
         for i, _ in enumerate(notification_json_list):
@@ -84,6 +84,28 @@ class Student:
             ))
         return notifications
 
+    def get_terms(self) -> list[Term]:
+        """
+        Get all terms from student.
+        Returns a list of Term objects
+        """
+        # Send a request to retrieve courses/grades
+        term_response = self.session.get(
+            "{}resources/portal/grades/".format(
+                self.dist_base_url
+            ), headers=HEADERS)
+        # Get the list of terms in the JSON
+        term_response_json = json.loads(term_response.text)
+        term_json_list = term_response_json[0]["terms"]
+        terms: list[Term] = list()
+        # Add each term from JSON to a term object in terms list with data from the JSON
+        for term in term_json_list:
+            terms.append(Term(
+                # Add a term to terms with each attribute from the JSON
+                **term
+            ))
+        return terms
+
 def main():
     """example program"""
     district = input("Enter district: ")
@@ -92,7 +114,11 @@ def main():
     password = input("Enter password: ")
     user = Student(district, state, username, password)
     user.start_session()
-    print(user.get_notifications())
+    terms = user.get_terms()
+    for term in terms:
+        for course in term.courses:
+            for grade in course.gradingTasks:
+                print(term.termName, grade.taskName, course.courseName, grade.percent, grade.comments)
 
 if __name__ == "__main__":
     main()
