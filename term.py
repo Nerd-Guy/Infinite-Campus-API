@@ -3,32 +3,37 @@ from dataclasses import dataclass
 @dataclass(init=False, repr=False)
 class Grade:
     _id: str
-    personID: int 
+    personID: int
     trialID: int
-    calendarID: int 
-    structureID: int 
+    calendarID: int
+    structureID: int
     courseID: int
-    courseName: str 
-    sectionID: int 
+    courseName: str
+    sectionID: int
     taskID: int
-    termID: int 
-    hasAssignments: bool 
+    termID: int
+    hasAssignments: bool
     hasCompositeTasks: bool
-    taskName: str 
-    gradedOnce: bool 
+    taskName: str
+    gradedOnce: bool
     treeTraversalSeq: int
-    cumulativeTermSeq: int 
+    cumulativeTermSeq: int
     maxAssignments: int
     calcMethod: str
-    groupWeighted: bool 
-    usePercent: bool 
+    groupWeighted: bool
+    usePercent: bool
+    curveID: int
     scoreID: int
-    score: int 
+    score: int
+    percent: float
     comments: str
-    percent: float 
+    progressScore: int
+    progressPercent: float
+    progressPointsEarned: float
+    progressTotalPoints: float
     hasDetail: bool
     _model: str
-    _hashCode: str 
+    _hashCode: str
     termSeq: int
     termName: str
 
