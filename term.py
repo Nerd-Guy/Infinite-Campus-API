@@ -113,6 +113,13 @@ class Term:
                 if not isinstance(course, Course):
                     self.courses.append(Course(**course))
 
+    def find_course(self, course_name: str) -> Course:
+        for course in self.courses:
+            if course.courseName == course_name:
+                return course
+
+        return None
+        
     def __repr__(self) -> str:
         return "{}".format(self.termName)
     
