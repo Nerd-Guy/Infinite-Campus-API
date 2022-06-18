@@ -114,10 +114,6 @@ def main():
     user = Student(district, state, username, password)
     user.start_session()
     terms = user.get_terms()
-    for term in terms:
-        for course in term.courses:
-            for grade in course.gradingTasks:
-                print(term.termName, grade.taskName, course.courseName, grade.percent, grade.comments)
 
 if __name__ == "__main__":
     main()
