@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+
 
 @dataclass(init=False, repr=False)
 class Notification:
     """Notifcation class for student notifications."""
-    notificationID: int 
+
+    notificationID: int
     userID: int
     creationTimestamp: str
     notificationTypeID: int
     read: bool
     notificationText: str
-    notificationTypeText: str  
+    notificationTypeText: str
     displayedDate: str
     finalText: str
     finalUrl: str
@@ -19,6 +23,4 @@ class Notification:
             setattr(self, kwarg, kwargs[kwarg])
 
     def __repr__(self):
-        return "{}: {}.".format(
-            self.displayedDate, self.notificationText 
-        )
+        return "{}: {}.".format(self.displayedDate, self.notificationText)

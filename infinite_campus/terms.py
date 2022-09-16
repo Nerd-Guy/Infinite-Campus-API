@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+
 
 @dataclass(init=False, repr=False)
 class Grade:
@@ -48,6 +51,7 @@ class Grade:
         # This is important one of these attributes does not exist, which is common
         return None
 
+
 @dataclass(init=False, repr=False)
 class Course:
     _id: str
@@ -90,15 +94,16 @@ class Course:
     def __getattr__(self, _) -> None:
         return None
 
+
 @dataclass(init=False, repr=False)
 class Term:
     termID: int
-    termName: str 
+    termName: str
     termScheduleID: int
     termScheduleName: str
     termSeq: int
-    isPrimary: bool 
-    startDate: str 
+    isPrimary: bool
+    startDate: str
     endDate: str
     courses: list[Course]
 
@@ -119,9 +124,9 @@ class Term:
                 return course
 
         return None
-        
+
     def __repr__(self) -> str:
         return "{}".format(self.termName)
-    
+
     def __getattr__(self, _) -> None:
         return None

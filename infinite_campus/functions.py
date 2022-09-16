@@ -1,4 +1,7 @@
-from term import Term
+from __future__ import annotations
+
+from .terms import Term
+
 
 def calculate_gpa(terms: list[Term]) -> float:
     gpa = float()
@@ -14,5 +17,6 @@ def calculate_gpa(terms: list[Term]) -> float:
     gpa /= n_courses
     return gpa
 
+
 def number_grade(grade: float) -> str:
-    return (grade / 20)-1
+    return (grade / 20) - 1
