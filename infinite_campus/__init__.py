@@ -1,3 +1,11 @@
 from .students import Student
-from .notifications import Notification
-from .terms import Term, Course, Grade
+
+if __name__ == "__main__":
+    """An example using this library."""
+    my_student = Student(
+        input("Enter district: "),
+        input("Enter state abbreviation: "),
+        input("Enter username: "),
+        input("Enter password"),
+    )
+    my_student.log_in()
