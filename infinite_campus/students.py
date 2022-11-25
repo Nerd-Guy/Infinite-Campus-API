@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .notifications import Notification
-from .assignments import Assignment
+from .assignments import Assignment, Category
 from .terms import Term
 from .district import District
 
@@ -9,15 +9,14 @@ import requests
 import xmltojson
 import json
 
-
-class StudentException(BaseException):
-    pass
-
-
 SUCCESS_MSG = "success"
 HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36"
 }
+
+
+class StudentException(BaseException):
+    pass
 
 
 class Student:
@@ -31,15 +30,16 @@ class Student:
         self.username = username
         self.password = password
         self.__session = requests.Session()
+        self.assignments_cache = None
 
     def log_in(self) -> None:
-        """
-        Attempts to log in to IC as student.
-        """
+        """Attempts to log in to IC as student."""
+
+        # Verify district details
         self.district = District(self.district_name, self.state)
         self.district.validate()
 
-        # Send a request verifying the student's login credentials
+        # Veryify login details.
         user_reponse = self.__session.get(
             "{}/verify.jsp?nonBrowser=true&username={}&password={}&appName={}".format(
                 self.district.district_baseurl,
@@ -49,7 +49,6 @@ class Student:
             ),
             headers=HEADERS,
         )
-        # Throw exception if there is an error with verifying the student's login credentials
         if not SUCCESS_MSG in user_reponse.text:
             raise StudentException("Error verifying student's login credentials")
 
@@ -58,29 +57,25 @@ class Student:
         Get all recent notifications from student.
         Returns a list of notification objects.
         """
-        # Send a request to retrieve notifications
         notifcation_response = self.__session.get(
             "{}prism?x=notifications.Notification-retrieve".format(
                 self.district.district_baseurl
             ),
             headers=HEADERS,
         )
-        # Load notification xml file into JSON format
+        # IC returns an xml file for notifications that we convert to JSON.
         notifcation_response_json = json.loads(
             xmltojson.parse(notifcation_response.text)
         )
-        # Get the list of notifications in the JSON
         notification_json_list = notifcation_response_json["campusRoot"][
             "NotificationList"
         ]["Notification"]
         notifications: list[Notification] = list()
-        # Add each notification from JSON to a notification object in notifications list with data from JSON
         for notification_content in notification_json_list:
             notifications.append(
                 Notification(
-                    # Add a notification to notifications with each attribute from the JSON
-                    # Remove prefix @ which occurs in every key in the JSON
                     **{
+                        # For most keys IC adds '@' as a prefix so we remove them.
                         attr.removeprefix("@"): value
                         for (attr, value) in notification_content.items()
                     }
@@ -88,22 +83,47 @@ class Student:
             )
         return notifications
 
-    def get_assignments(self) -> list[Assignment]:
+    def get_assignments(self, store_cache: bool = True) -> list[Assignment]:
         """
         Get all assignments from the current school year from the student.
+        'store_cache' indicates whether the assignments will be stored for
+        faster access when calling other methods such as 'get_terms' which
+        use the assignments.
         Returns a list of assignment objects.
         """
         assignment_response = self.__session.get(
-            "{}api/portal/assignment/listView".format(
-                self.district.district_baseurl
-            ),
+            "{}api/portal/assignment/listView".format(self.district.district_baseurl),
             headers=HEADERS,
         )
         assignment_response_json = json.loads(assignment_response.text)
-        assignments: list[Assignment] = []
+        assignments: list[Assignment] = list()
         for assignment_data in assignment_response_json:
             assignments.append(Assignment(**assignment_data))
+        if store_cache and self.assignments_cache is None:
+            self.assignments_cache = assignments
         return assignments
+
+    def get_categories(self, section_id: int | str) -> list[Category]:
+        """
+        Get all assignment categories for a section.
+        'section_id' is the ID of the section.
+        Returns a list of category objects.
+        """
+        category_response = self.__session.get(
+            "{}api/instruction/categories?sectionID={}".format(
+                self.district.district_baseurl, section_id
+            ),
+            headers=HEADERS,
+        )
+        category_response_json = json.loads(category_response.text)
+        categories: list[Category] = list()
+        # TODO / FIX FOR WHEN SECTIONID IS INVALID
+        if isinstance(category_response_json, dict):
+            if category_response_json["statusCode"] == 404:
+                raise ValueError("section_id is invalid.")
+        for category_data in category_response_json:
+            categories.append(Category(**category_data))
+        return categories
 
     def get_terms(self) -> list[Term]:
         """
@@ -117,10 +137,25 @@ class Student:
         )
         # Get the list of terms in the JSON
         term_response_json = json.loads(term_response.text)
-        term_json_list = term_response_json[0]["terms"]
+        term_json_list: list = term_response_json[0]["terms"]
         terms: list[Term] = list()
-        # Add each term from JSON to a term object in terms list with data from the JSON
+
+        assignments = self.assignments_cache
+        if self.assignments_cache is None:
+            assignments = self.get_assignments(store_cache=False)
         for term in term_json_list:
+            for course in term["courses"]:
+                course["categories"] = self.get_categories(course["sectionID"])
+                for category in course["categories"]:
+                    category.assignments = list(
+                        filter(
+                            lambda assignment: assignment.sectionID
+                            == course["sectionID"],
+                            assignments,
+                        )
+                    )
+                    for assignment in category.assignments:
+                        assignment.parentCategory = category
             terms.append(
                 Term(
                     # Add a term to terms with each attribute from the JSON

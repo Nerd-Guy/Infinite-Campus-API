@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .assignments import Category
+
 from dataclasses import dataclass
 
 
@@ -54,6 +56,8 @@ class Grade:
 
 @dataclass(init=False, repr=False)
 class Course:
+    grades: list[Grade]
+    categories: list[Category]
     _id: str
     rosterID: int
     personID: int
@@ -75,18 +79,15 @@ class Course:
     teacherDisplay: str
     ideStandardsOnPortal: bool
     dropped: bool
-    gradingTasks: list[Grade]
 
     def __init__(self, **kwargs) -> None:
-        self.gradingTasks = []
-        for kwarg in kwargs.keys():
-            if kwarg != "gradingTasks":
-                setattr(self, kwarg, kwargs[kwarg])
-
+        self.grades = list()
+        for k, v in kwargs.items():
+            if k != "gradingTasks":
+                setattr(self, k, v)
         if "gradingTasks" in kwargs.keys():
-            # Add grades to course
-            for i in range(len(kwargs["gradingTasks"])):
-                self.gradingTasks.append(Grade(**kwargs["gradingTasks"][i]))
+            for grade_data in kwargs["gradingTasks"]:
+                self.grades.append(Grade(**grade_data))
 
     def __repr__(self) -> str:
         return "{} {}".format(self.courseName, self.teacherDisplay)
@@ -109,9 +110,9 @@ class Term:
 
     def __init__(self, **kwargs) -> None:
         self.courses = []
-        for kwarg in kwargs.keys():
-            if kwarg != "courses":
-                setattr(self, kwarg, kwargs[kwarg])
+        for k, v in kwargs.items():
+            if k != "courses":
+                setattr(self, k, v)
 
         if "courses" in kwargs.keys():
             for course in kwargs["courses"]:

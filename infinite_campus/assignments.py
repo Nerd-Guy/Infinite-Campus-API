@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(init=False, repr=False)
 class Assignment:
+    parentCategory: Category
     objectSectionID: int
     parentObjectSectionID: None | typing.Any
     type: int
@@ -53,5 +55,40 @@ class Assignment:
     isValidMark: bool
     includeCampusLearning: bool
 
+    def __init__(self, **kwargs) -> None:
+        for kwarg in kwargs.keys():
+            setattr(self, kwarg, kwargs[kwarg])
+
+    def __getattr__(self, __name) -> None:
+        return None
+
     def __repr__(self):
         return "{}: {}.".format(self.assignmentName, self.scorePercentage)
+
+
+@dataclass(init=False, repr=False)
+class Category:
+    assignments: list[Assignment]
+    categoryID: int
+    sectionID: int
+    name: str
+    curveID: None | typing.Any
+    weight: float
+    seq: int
+    hidePortal: None | typing.Any
+    calcExclude: bool
+    groupCourseID: None | typing.Any
+    modifiedByID: int
+    modifiedDate: str
+    districtManaged: bool
+    districtSourced: bool
+
+    def __init__(self, **kwargs) -> None:
+        for kwarg in kwargs.keys():
+            setattr(self, kwarg, kwargs[kwarg])
+
+    def __getattr__(self, __name) -> None:
+        return None
+
+    def __repr__(self):
+        return f"{self.name} (weight: {self.weight})"
