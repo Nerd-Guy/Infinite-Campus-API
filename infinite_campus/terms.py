@@ -118,6 +118,8 @@ class Term:
             for course in kwargs["courses"]:
                 if not isinstance(course, Course):
                     self.courses.append(Course(**course))
+                    continue
+                self.courses.append(course)
 
     def find_course(self, course_name: str) -> Course:
         for course in self.courses:
