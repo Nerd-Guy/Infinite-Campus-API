@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from .notifications import Notification
 from .assignments import Assignment, Category
-from .terms import Term
+from .terms import Term, Course
 from .district import District
 
 import requests
 import xmltojson
 import json
+import threading
 
 SUCCESS_MSG = "success"
 HEADERS = {
@@ -103,15 +104,16 @@ class Student:
             self.assignments_cache = assignments
         return assignments
 
-    def get_categories(self, section_id: int | str) -> list[Category]:
+    def get_categories(
+        self, course: Course, __store_category: bool = False
+    ) -> list[Category]:
         """
-        Get all assignment categories for a section.
-        'section_id' is the ID of the section.
+        Get all assignment categories for a course.
         Returns a list of category objects.
         """
         category_response = self.__session.get(
             "{}api/instruction/categories?sectionID={}".format(
-                self.district.district_baseurl, section_id
+                self.district.district_baseurl, course.sectionID
             ),
             headers=HEADERS,
         )
@@ -123,6 +125,8 @@ class Student:
                 raise ValueError("section_id is invalid.")
         for category_data in category_response_json:
             categories.append(Category(**category_data))
+        if __store_category:
+            course.categories = categories
         return categories
 
     def get_terms(self) -> list[Term]:
@@ -130,36 +134,42 @@ class Student:
         Get all terms from student.
         Returns a list of Term objects
         """
-        # Send a request to retrieve courses/grades
         term_response = self.__session.get(
             "{}resources/portal/grades/".format(self.district.district_baseurl),
             headers=HEADERS,
         )
-        # Get the list of terms in the JSON
         term_response_json = json.loads(term_response.text)
         term_json_list: list = term_response_json[0]["terms"]
         terms: list[Term] = list()
-
         assignments = self.assignments_cache
         if self.assignments_cache is None:
             assignments = self.get_assignments(store_cache=False)
+        threads = list()
         for term in term_json_list:
+            for i, course_data in enumerate(term["courses"]):
+                # Convert course data to Course object to pass to 'get_categories'.
+                course = Course(**course_data)
+                term["courses"][i] = course
+                t = threading.Thread(
+                    target=self.get_categories,
+                    args=(
+                        course,
+                        True,
+                    ),
+                )
+                t.start()
+                threads.append(t)
+            [t.join() for t in threads]
             for course in term["courses"]:
-                course["categories"] = self.get_categories(course["sectionID"])
-                for category in course["categories"]:
+                for category in course.categories:
                     category.assignments = list(
                         filter(
                             lambda assignment: assignment.sectionID
-                            == course["sectionID"],
+                            == course.sectionID,
                             assignments,
                         )
                     )
                     for assignment in category.assignments:
                         assignment.parentCategory = category
-            terms.append(
-                Term(
-                    # Add a term to terms with each attribute from the JSON
-                    **term
-                )
-            )
+            terms.append(Term(**term))
         return terms
