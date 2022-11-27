@@ -1,10 +1,5 @@
 # Infinite-Campus-API
-An API wrapper for [Infinite Campus](https://www.infinitecampus.org) in Python. To create a new student:
-```python
-s = Student("School District Here", "State Here", "Username Here", "Password Here")
-s.start_session()
-```
-Get all the terms of the student from the current school year:
-```python
-terms = s.get_terms()
-```
+### Description
+This project is an API for Infinite Campus. It is designed to be easy to use and understand. With this API, you can retrieve student's grades, courses and assignments and more with ease!
+### Note
+I cannot guarantee that this will work for every school district or even individual accounts. I am only able to test this with the one school district and the select number of accounts I have access to. If you encounter a problem with this package, create a new issue and I will attempt to review it.
