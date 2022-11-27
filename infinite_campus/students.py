@@ -105,7 +105,7 @@ class Student:
         return assignments
 
     def get_categories(
-        self, course: Course, __store_category: bool = False
+        self, course: Course, __store_categories: bool = False
     ) -> list[Category]:
         """
         Get all assignment categories for a course.
@@ -119,13 +119,11 @@ class Student:
         )
         category_response_json = json.loads(category_response.text)
         categories: list[Category] = list()
-        # TODO / FIX FOR WHEN SECTIONID IS INVALID
         if isinstance(category_response_json, dict):
-            if category_response_json["statusCode"] == 404:
-                raise ValueError("section_id is invalid.")
+            raise ValueError("section_id is invalid.")
         for category_data in category_response_json:
             categories.append(Category(**category_data))
-        if __store_category:
+        if __store_categories:
             course.categories = categories
         return categories
 
